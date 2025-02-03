@@ -22,7 +22,7 @@ public class Main
         int optwo;
         int delaytimer = 0;
         int soundtimer = 0;
-        int sp = 0;
+        int sp = -1;
         System.out.println("Memory init");
         //file i/o
         if (args.length < 1) {
@@ -83,6 +83,7 @@ public class Main
                 {
                     System.exit(0);
                 }
+                continue;
             }
             if (opone <= 32) //1NNN Jump
             {
@@ -164,7 +165,7 @@ public class Main
             }
             if (opone <= 128) //7XNN Add NN to VX
             {
-                registers[x] += optwo;
+                registers[x] = (registers[x] + optwo) % 256;
                 continue;
             }
             if (opone <= 144) //8XY0 Set VX to VY
@@ -332,6 +333,58 @@ public class Main
                 }
                 continue;
             }
+            if (optwo == 0x07) //FX07 Set VX to delay timer
+            {
+                registers[x] = delaytimer;
+                continue;
+            }
+            if (optwo == 0x15)//FX15
+            {
+                delaytimer = registers[x];
+                continue;
+            }
+            if (optwo == 0x18) //FX18
+            {
+                soundtimer = registers[x];
+                continue;
+            }
+            if (optwo == 0x1E) //FX1E
+            {
+                i = (i + registers[x]) % 65536;
+                continue;
+            }
+            if (optwo == 0x29) //FX29 Locate font
+            {
+                i = 5 * registers[x];
+                continue;
+            }
+            if (optwo == 0x33) //FX33 Store BCD of VX in I, I+1, I+2
+            {
+                memory[i] = registers[x] / 100;
+                memory[i+1] = (registers[x] / 10) % 10;
+                memory[i+2] = registers[x] % 10;
+                continue;
+            }
+            if (optwo == 0x55) //FX55 Store V0 to VX in memory starting at I
+            {
+                int dummy;
+                for (dummy = 0; dummy <= x; dummy++)
+                {
+                    memory[i + dummy] = registers[dummy];
+                }
+                i = (i + dummy) % 65536;
+                continue;
+            }
+            if (optwo == 0x65) //FX65 Load V0 to VX from memory starting at I
+            {
+                int dummy;
+                for (dummy = 0; dummy <= x; dummy++)
+                {
+                    registers[dummy] = memory[i + dummy];
+                }
+                i = (i + dummy) % 65536;
+                continue;
+            }
 
             
             
@@ -353,7 +406,8 @@ public class Main
                     {
                         for (int width = 1; width <= 64; width++)
                         {
-                            System.out.print(display[dummy]); //display 1 pixel from the screen buffer
+                            
+                            if (display[dummy] == 1) {System.out.print("█");} else {System.out.print(" ");}; //display 1 pixel from the screen buffer
                             System.out.print(" "); //display 1 pixel from the screen buffer
                             dummy++;
                         }
